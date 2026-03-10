@@ -1,51 +1,191 @@
-# Adaptive Testing Prototype
+# AI Adaptive Diagnostic Engine
 
-This is a 1-Dimension Adaptive Testing system built as per the intern assignment. It dynamically selects questions based on user responses to estimate proficiency, using Item Response Theory (IRT). After 10 questions, it generates a personalized study plan via an LLM.
+This project implements a **1-Dimensional Adaptive Testing System** using Item Response Theory (IRT).  
+The system dynamically selects questions based on a student's estimated ability and produces an AI-generated study plan.
 
-## Instructions on How to Run the Project
+The objective is to simulate the core mechanics used in real adaptive exams such as **GRE, GMAT, and Duolingo English Test**.
 
-1. **Prerequisites**:
-   - Python 3.10+ installed.
-   - MongoDB Atlas (URI in .env).
-   - Google API key for Gemini (in .env as GOOGLE_API_KEY).
+---
 
-2. **Setup**:
-   - Clone this repository.
-   - Create .env with MONGO_URI and GOOGLE_API_KEY.
-   - Install dependencies: `pip install -r requirements.txt`
+# Architecture
 
-3. **Seed the Database**:
-   - Run `python seed.py`.
+Backend
+- FastAPI
+- Python
+- MongoDB
 
-4. **Run the Backend**:
-   - Run `uvicorn app:app --reload`.
+Frontend
+- Streamlit
 
-5. **Run the Frontend**:
-   - Run `streamlit run frontend.py` (opens in browser).
+AI
+- Google Gemini API
 
-6. **Testing Flow**:
-   - Start test (auto).
-   - Answer question, submit—see feedback.
-   - Click "Next Question".
-   - After 10, click "Get AI Recommendations" for plan.
+---
 
-## Brief Explanation of Adaptive Algorithm Logic
+# Project Structure
 
-Uses 1-parameter IRT (Rasch model):
-- Start at ability 0.5.
-- Select question closest to ability.
-- Update ability via MLE after response.
-- Ends after 10, analyzes misses for LLM.
+adaptive.py  
+Core adaptive algorithm and ability estimation.
 
-## AI Log
+app.py  
+FastAPI backend providing adaptive test endpoints.
 
-Used Grok to generate structure, IRT, LLM integration. Challenges: SSL debug, manual testing in PyCharm.
+database.py  
+MongoDB connection and collections.
 
-## API Documentation
+seed.py  
+Seeds GRE-style question bank.
 
-- POST /start_session: New session.
-- GET /next_question/{session_id}: Next question.
-- POST /submit_answer/{session_id}: Submit (body {"answer": "B"}).
-- GET /study_plan/{session_id}: Plan after 10.
+llm.py  
+Gemini integration for generating study plans.
 
-Error handling included.
+frontend.py  
+Streamlit UI for running the adaptive test.
+
+---
+
+# Adaptive Algorithm
+
+The system uses a **1-parameter IRT (Rasch Model)**.
+
+Probability of correct answer:
+
+P(correct) = 1 / (1 + e^(θ - b))
+
+Where:
+
+θ = student ability  
+b = question difficulty
+
+Workflow:
+
+1. Student begins with ability θ = 0.5
+2. System selects question maximizing information at θ
+3. After response, ability is re-estimated using **Maximum Likelihood Estimation**
+4. The process repeats for 10 questions
+5. Weak topics are extracted
+6. Gemini generates a personalized learning plan
+
+---
+
+# MongoDB Schema
+
+Questions Collection
+
+
+{
+question_text: str
+options: dict
+correct_answer: str
+difficulty: float
+topic: str
+tags: list
+}
+
+
+UserSessions Collection
+
+
+{
+session_id: str
+current_ability: float
+questions_asked: list
+answers: list
+}
+
+
+Indexes:
+- difficulty
+- session_id
+
+---
+
+# API Endpoints
+
+POST /start_session  
+Creates a new testing session.
+
+GET /next_question/{session_id}  
+Returns next adaptive question.
+
+POST /submit_answer/{session_id}  
+Submits answer and updates ability estimate.
+
+GET /study_plan/{session_id}  
+Returns AI-generated study plan after test completion.
+
+---
+
+# Setup Instructions
+
+Install dependencies
+
+
+pip install -r requirements.txt
+
+
+Create `.env`
+
+
+MONGO_URI=your_mongo_uri
+
+GEMINI_API_KEY=your_key
+
+
+Seed questions
+
+
+python seed.py
+
+
+Start backend
+
+
+uvicorn app:app --reload
+
+
+Start frontend
+
+
+streamlit run frontend.py
+
+
+---
+
+# AI Log
+
+AI tools used:
+- ChatGPT
+- Cursor
+
+AI was used to accelerate:
+
+- adaptive algorithm scaffolding
+- FastAPI endpoint structure
+- Gemini integration
+- debugging MongoDB TLS errors
+
+Manual engineering work included:
+
+- refining IRT likelihood optimization
+- designing Mongo schema
+- improving LLM prompt quality
+
+---
+
+# Key Design Decisions
+
+Adaptive selection uses **information maximization** rather than naive difficulty matching.
+
+Ability estimation uses **MLE optimization**.
+
+LLM generation focuses on **specific actionable study steps** instead of generic advice.
+
+---
+
+# Future Improvements
+
+- multi-dimensional IRT
+- question discrimination parameter
+- response time modeling
+- question exposure control
