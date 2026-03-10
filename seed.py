@@ -1,20 +1,56 @@
 from database import questions_collection
 
-# Clear existing questions to avoid duplicates (for re-seeding)
+EXPECTED_COUNT = 20
+
+
+def validate_questions(questions):
+    """
+    Validate question schema before inserting into MongoDB.
+    Prevents bad data entering the question bank.
+    """
+
+    required_fields = {
+        "question_text",
+        "options",
+        "correct_answer",
+        "difficulty",
+        "topic",
+        "tags",
+    }
+
+    for i, q in enumerate(questions):
+
+        missing = required_fields - q.keys()
+
+        if missing:
+            raise ValueError(f"Question {i} missing fields: {missing}")
+
+        if not (0.0 <= q["difficulty"] <= 1.0):
+            raise ValueError(
+                f"Question {i} difficulty must be between 0.0 and 1.0"
+            )
+
+        if q["correct_answer"] not in q["options"]:
+            raise ValueError(
+                f"Question {i} correct answer must exist in options"
+            )
+
+
+print("Clearing existing questions...")
+
 questions_collection.delete_many({})
 
-# 20 GRE-style questions (10 verbal, 10 quantitative)
-# Difficulties range from 0.1 to 1.0
-# Topics: Vocabulary (verbal), Algebra/Geometry (quantitative)
+print("Seeding question bank...")
+
+
 questions = [
-    # Verbal (Vocabulary)
     {
         "question_text": "Select the synonym for 'happy'.",
         "options": {"A": "Sad", "B": "Joyful", "C": "Angry", "D": "Tired"},
         "correct_answer": "B",
         "difficulty": 0.1,
         "topic": "Vocabulary",
-        "tags": ["synonym", "basic"]
+        "tags": ["synonym", "basic"],
     },
     {
         "question_text": "Select the antonym for 'large'.",
@@ -22,7 +58,7 @@ questions = [
         "correct_answer": "C",
         "difficulty": 0.15,
         "topic": "Vocabulary",
-        "tags": ["antonym", "basic"]
+        "tags": ["antonym", "basic"],
     },
     {
         "question_text": "Select the synonym for 'quick'.",
@@ -30,7 +66,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.2,
         "topic": "Vocabulary",
-        "tags": ["synonym"]
+        "tags": ["synonym"],
     },
     {
         "question_text": "Select the antonym for 'ancient'.",
@@ -38,7 +74,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.3,
         "topic": "Vocabulary",
-        "tags": ["antonym"]
+        "tags": ["antonym"],
     },
     {
         "question_text": "Select the synonym for 'obfuscate'.",
@@ -46,7 +82,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.8,
         "topic": "Vocabulary",
-        "tags": ["synonym", "advanced"]
+        "tags": ["synonym", "advanced"],
     },
     {
         "question_text": "Select the antonym for 'mitigate'.",
@@ -54,7 +90,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.7,
         "topic": "Vocabulary",
-        "tags": ["antonym", "advanced"]
+        "tags": ["antonym", "advanced"],
     },
     {
         "question_text": "Select the synonym for 'ubiquitous'.",
@@ -62,7 +98,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.6,
         "topic": "Vocabulary",
-        "tags": ["synonym"]
+        "tags": ["synonym"],
     },
     {
         "question_text": "Select the antonym for 'ephemeral'.",
@@ -70,7 +106,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.9,
         "topic": "Vocabulary",
-        "tags": ["antonym", "advanced"]
+        "tags": ["antonym", "advanced"],
     },
     {
         "question_text": "Select the synonym for 'laconic'.",
@@ -78,7 +114,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.85,
         "topic": "Vocabulary",
-        "tags": ["synonym", "advanced"]
+        "tags": ["synonym", "advanced"],
     },
     {
         "question_text": "Select the antonym for 'prolific'.",
@@ -86,16 +122,15 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.75,
         "topic": "Vocabulary",
-        "tags": ["antonym"]
+        "tags": ["antonym"],
     },
-    # Quantitative (Algebra/Geometry)
     {
         "question_text": "What is 2 + 3?",
         "options": {"A": "4", "B": "5", "C": "6", "D": "7"},
         "correct_answer": "B",
         "difficulty": 0.1,
         "topic": "Algebra",
-        "tags": ["addition", "basic"]
+        "tags": ["addition", "basic"],
     },
     {
         "question_text": "What is 4 * 5?",
@@ -103,7 +138,7 @@ questions = [
         "correct_answer": "A",
         "difficulty": 0.2,
         "topic": "Algebra",
-        "tags": ["multiplication"]
+        "tags": ["multiplication"],
     },
     {
         "question_text": "Solve for x: x - 7 = 3.",
@@ -111,7 +146,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.25,
         "topic": "Algebra",
-        "tags": ["equation"]
+        "tags": ["equation"],
     },
     {
         "question_text": "What is the area of a square with side 4?",
@@ -119,7 +154,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.3,
         "topic": "Geometry",
-        "tags": ["area"]
+        "tags": ["area"],
     },
     {
         "question_text": "Solve for x: 2x + 4 = 10.",
@@ -127,7 +162,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.4,
         "topic": "Algebra",
-        "tags": ["linear equation"]
+        "tags": ["linear equation"],
     },
     {
         "question_text": "What is the perimeter of a rectangle with length 5 and width 3?",
@@ -135,7 +170,7 @@ questions = [
         "correct_answer": "A",
         "difficulty": 0.35,
         "topic": "Geometry",
-        "tags": ["perimeter"]
+        "tags": ["perimeter"],
     },
     {
         "question_text": "Solve the quadratic: x^2 - 5x + 6 = 0 (roots).",
@@ -143,7 +178,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.6,
         "topic": "Algebra",
-        "tags": ["quadratic", "advanced"]
+        "tags": ["quadratic", "advanced"],
     },
     {
         "question_text": "What is sin(90 degrees)?",
@@ -151,7 +186,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.5,
         "topic": "Geometry",
-        "tags": ["trigonometry"]
+        "tags": ["trigonometry"],
     },
     {
         "question_text": "Find the derivative of x^2.",
@@ -159,7 +194,7 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.9,
         "topic": "Algebra",
-        "tags": ["calculus", "advanced"]
+        "tags": ["calculus", "advanced"],
     },
     {
         "question_text": "What is the probability of rolling a 6 on a die?",
@@ -167,9 +202,25 @@ questions = [
         "correct_answer": "B",
         "difficulty": 0.45,
         "topic": "Algebra",
-        "tags": ["probability"]
-    }
+        "tags": ["probability"],
+    },
 ]
 
-questions_collection.insert_many(questions)
-print("Seeded 20 questions successfully.")
+
+validate_questions(questions)
+
+result = questions_collection.insert_many(questions)
+
+print(f"Inserted {len(result.inserted_ids)} questions.")
+
+if len(result.inserted_ids) != EXPECTED_COUNT:
+    print("Warning: Expected 20 questions but inserted a different count.")
+else:
+    print("Question bank seeded successfully.")
+
+print("Creating indexes...")
+
+questions_collection.create_index("difficulty")
+questions_collection.create_index("topic")
+
+print("Indexes created.")
