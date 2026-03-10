@@ -1,10 +1,10 @@
 import os
-from google import genai
+from google import genai  # Updated import as per docs
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))  # Client from env key
 
 
 def generate_study_plan(missed_topics: list, final_ability: float) -> str:
@@ -17,8 +17,8 @@ def generate_study_plan(missed_topics: list, final_ability: float) -> str:
 
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",  # Valid model - free tier, text handling
-            contents=prompt
+            model="gemini-3-flash-preview",  # Updated to valid preview model from docs
+            contents=prompt  # As per docs
         )
         return response.text.strip()
     except Exception as e:
