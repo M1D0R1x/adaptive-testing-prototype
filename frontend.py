@@ -15,43 +15,85 @@ def api_post(url, data=None):
 def api_get(url):
     r = requests.get(url)
     if r.status_code != 200:
-        st.error(r.json().get("detail", "API Error"))
         return None
     return r.json()
 
 
 st.title("Adaptive Diagnostic Engine")
 
+
+# -----------------------
+# Session Initialization
+# -----------------------
+
 if "session_id" not in st.session_state:
+
     session = api_post(f"{API_URL}/start_session")
+
     st.session_state.session_id = session["session_id"]
     st.session_state.q_index = 0
     st.session_state.question = None
+    st.session_state.feedback = None
     st.session_state.study_plan = None
 
 
-progress = st.progress(st.session_state.q_index / 10)
+TOTAL_QUESTIONS = 10
+
+# -----------------------
+# Progress Bar (FIXED)
+# -----------------------
+
+progress_value = min(st.session_state.q_index / TOTAL_QUESTIONS, 1.0)
+st.progress(progress_value)
+
+
+# -----------------------
+# Result Page
+# -----------------------
 
 if st.session_state.study_plan:
 
+    st.balloons()
     st.header("Personalized Study Plan")
+
     st.write(st.session_state.study_plan)
 
-    if st.button("Restart"):
+    if st.button("Restart Test"):
         st.session_state.clear()
         st.rerun()
 
+
+# -----------------------
+# Test Flow
+# -----------------------
+
 else:
 
-    if st.session_state.question is None:
+    # Load question
+    if st.session_state.question is None and st.session_state.q_index < TOTAL_QUESTIONS:
+
         q = api_get(f"{API_URL}/next_question/{st.session_state.session_id}")
-        st.session_state.question = q
+
+        if q:
+            st.session_state.question = q
+
+        else:
+            plan = api_get(f"{API_URL}/study_plan/{st.session_state.session_id}")
+
+            if plan:
+                st.session_state.study_plan = plan["study_plan"]
+                st.rerun()
+
+    if st.session_state.question is None:
+        st.stop()
 
     q = st.session_state.question
 
-    st.subheader(f"Question {st.session_state.q_index + 1}/10")
+    st.subheader(f"Question {st.session_state.q_index + 1}/{TOTAL_QUESTIONS}")
+
     st.write(q["question_text"])
     st.caption(f"Topic: {q['topic']}")
+    st.caption(f"Difficulty: {q['difficulty']:.2f}")
 
     options = list(q["options"].keys())
 
@@ -61,7 +103,11 @@ else:
         format_func=lambda x: f"{x}: {q['options'][x]}",
     )
 
-    if st.button("Submit"):
+    # -----------------------
+    # Submit Answer
+    # -----------------------
+
+    if st.button("Submit Answer") and st.session_state.feedback is None:
 
         result = api_post(
             f"{API_URL}/submit_answer/{st.session_state.session_id}",
@@ -69,23 +115,41 @@ else:
         )
 
         if result:
+            st.session_state.feedback = result
+            st.rerun()
 
-            if result["correct"]:
-                st.success("Correct")
-            else:
-                st.error("Incorrect")
+    # -----------------------
+    # Feedback
+    # -----------------------
 
-            st.info(f"Estimated Ability: {result['new_ability']:.2f}")
+    if st.session_state.feedback:
 
-            st.session_state.q_index += 1
-            st.session_state.question = None
+        if st.session_state.feedback["correct"]:
+            st.success("Correct")
+        else:
+            st.error("Incorrect")
 
-            if st.session_state.q_index == 10:
+        st.info(f"Estimated Ability: {st.session_state.feedback['new_ability']:.2f}")
+
+        # Last question
+        if st.session_state.q_index == TOTAL_QUESTIONS - 1:
+
+            if st.button("Finish Test"):
 
                 plan = api_get(
                     f"{API_URL}/study_plan/{st.session_state.session_id}"
                 )
 
-                st.session_state.study_plan = plan["study_plan"]
+                if plan:
+                    st.session_state.study_plan = plan["study_plan"]
+                    st.rerun()
 
-            st.rerun()
+        else:
+
+            if st.button("Next Question"):
+
+                st.session_state.q_index += 1
+                st.session_state.question = None
+                st.session_state.feedback = None
+
+                st.rerun()

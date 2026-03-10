@@ -4,10 +4,6 @@ EXPECTED_COUNT = 20
 
 
 def validate_questions(questions):
-    """
-    Validate question schema before inserting into MongoDB.
-    Prevents bad data entering the question bank.
-    """
 
     required_fields = {
         "question_text",
@@ -37,173 +33,205 @@ def validate_questions(questions):
 
 
 print("Clearing existing questions...")
-
 questions_collection.delete_many({})
 
 print("Seeding question bank...")
 
 
 questions = [
-    {
-        "question_text": "Select the synonym for 'happy'.",
-        "options": {"A": "Sad", "B": "Joyful", "C": "Angry", "D": "Tired"},
-        "correct_answer": "B",
-        "difficulty": 0.1,
-        "topic": "Vocabulary",
-        "tags": ["synonym", "basic"],
-    },
-    {
-        "question_text": "Select the antonym for 'large'.",
-        "options": {"A": "Big", "B": "Huge", "C": "Small", "D": "Vast"},
-        "correct_answer": "C",
-        "difficulty": 0.15,
-        "topic": "Vocabulary",
-        "tags": ["antonym", "basic"],
-    },
-    {
-        "question_text": "Select the synonym for 'quick'.",
-        "options": {"A": "Slow", "B": "Fast", "C": "Lazy", "D": "Tardy"},
-        "correct_answer": "B",
-        "difficulty": 0.2,
-        "topic": "Vocabulary",
-        "tags": ["synonym"],
-    },
-    {
-        "question_text": "Select the antonym for 'ancient'.",
-        "options": {"A": "Old", "B": "Modern", "C": "Historic", "D": "Antique"},
-        "correct_answer": "B",
-        "difficulty": 0.3,
-        "topic": "Vocabulary",
-        "tags": ["antonym"],
-    },
-    {
-        "question_text": "Select the synonym for 'obfuscate'.",
-        "options": {"A": "Clarify", "B": "Confuse", "C": "Reveal", "D": "Expose"},
-        "correct_answer": "B",
-        "difficulty": 0.8,
-        "topic": "Vocabulary",
-        "tags": ["synonym", "advanced"],
-    },
-    {
-        "question_text": "Select the antonym for 'mitigate'.",
-        "options": {"A": "Alleviate", "B": "Worsen", "C": "Reduce", "D": "Lessen"},
-        "correct_answer": "B",
-        "difficulty": 0.7,
-        "topic": "Vocabulary",
-        "tags": ["antonym", "advanced"],
-    },
-    {
-        "question_text": "Select the synonym for 'ubiquitous'.",
-        "options": {"A": "Rare", "B": "Everywhere", "C": "Scarce", "D": "Limited"},
-        "correct_answer": "B",
-        "difficulty": 0.6,
-        "topic": "Vocabulary",
-        "tags": ["synonym"],
-    },
-    {
-        "question_text": "Select the antonym for 'ephemeral'.",
-        "options": {"A": "Temporary", "B": "Permanent", "C": "Fleeting", "D": "Short-lived"},
-        "correct_answer": "B",
-        "difficulty": 0.9,
-        "topic": "Vocabulary",
-        "tags": ["antonym", "advanced"],
-    },
-    {
-        "question_text": "Select the synonym for 'laconic'.",
-        "options": {"A": "Verbose", "B": "Concise", "C": "Talkative", "D": "Loquacious"},
-        "correct_answer": "B",
-        "difficulty": 0.85,
-        "topic": "Vocabulary",
-        "tags": ["synonym", "advanced"],
-    },
-    {
-        "question_text": "Select the antonym for 'prolific'.",
-        "options": {"A": "Productive", "B": "Unproductive", "C": "Fertile", "D": "Abundant"},
-        "correct_answer": "B",
-        "difficulty": 0.75,
-        "topic": "Vocabulary",
-        "tags": ["antonym"],
-    },
-    {
-        "question_text": "What is 2 + 3?",
-        "options": {"A": "4", "B": "5", "C": "6", "D": "7"},
-        "correct_answer": "B",
-        "difficulty": 0.1,
-        "topic": "Algebra",
-        "tags": ["addition", "basic"],
-    },
-    {
-        "question_text": "What is 4 * 5?",
-        "options": {"A": "20", "B": "15", "C": "25", "D": "10"},
-        "correct_answer": "A",
-        "difficulty": 0.2,
-        "topic": "Algebra",
-        "tags": ["multiplication"],
-    },
-    {
-        "question_text": "Solve for x: x - 7 = 3.",
-        "options": {"A": "8", "B": "10", "C": "4", "D": "6"},
-        "correct_answer": "B",
-        "difficulty": 0.25,
-        "topic": "Algebra",
-        "tags": ["equation"],
-    },
-    {
-        "question_text": "What is the area of a square with side 4?",
-        "options": {"A": "12", "B": "16", "C": "20", "D": "8"},
-        "correct_answer": "B",
-        "difficulty": 0.3,
-        "topic": "Geometry",
-        "tags": ["area"],
-    },
-    {
-        "question_text": "Solve for x: 2x + 4 = 10.",
-        "options": {"A": "2", "B": "3", "C": "4", "D": "5"},
-        "correct_answer": "B",
-        "difficulty": 0.4,
-        "topic": "Algebra",
-        "tags": ["linear equation"],
-    },
-    {
-        "question_text": "What is the perimeter of a rectangle with length 5 and width 3?",
-        "options": {"A": "16", "B": "15", "C": "8", "D": "10"},
-        "correct_answer": "A",
-        "difficulty": 0.35,
-        "topic": "Geometry",
-        "tags": ["perimeter"],
-    },
-    {
-        "question_text": "Solve the quadratic: x^2 - 5x + 6 = 0 (roots).",
-        "options": {"A": "1,6", "B": "2,3", "C": "3,4", "D": "4,5"},
-        "correct_answer": "B",
-        "difficulty": 0.6,
-        "topic": "Algebra",
-        "tags": ["quadratic", "advanced"],
-    },
-    {
-        "question_text": "What is sin(90 degrees)?",
-        "options": {"A": "0", "B": "1", "C": "0.5", "D": "-1"},
-        "correct_answer": "B",
-        "difficulty": 0.5,
-        "topic": "Geometry",
-        "tags": ["trigonometry"],
-    },
-    {
-        "question_text": "Find the derivative of x^2.",
-        "options": {"A": "x", "B": "2x", "C": "x^2", "D": "2"},
-        "correct_answer": "B",
-        "difficulty": 0.9,
-        "topic": "Algebra",
-        "tags": ["calculus", "advanced"],
-    },
-    {
-        "question_text": "What is the probability of rolling a 6 on a die?",
-        "options": {"A": "1/2", "B": "1/6", "C": "1/3", "D": "1/4"},
-        "correct_answer": "B",
-        "difficulty": 0.45,
-        "topic": "Algebra",
-        "tags": ["probability"],
-    },
+
+# ----------------
+# EASY (0.1-0.3)
+# ----------------
+
+{
+"question_text": "Select the synonym for 'happy'.",
+"options": {"A": "Joyful", "B": "Sad", "C": "Angry", "D": "Tired"},
+"correct_answer": "A",
+"difficulty": 0.1,
+"topic": "Vocabulary",
+"tags": ["synonym"]
+},
+
+{
+"question_text": "Select the antonym for 'large'.",
+"options": {"A": "Huge", "B": "Small", "C": "Vast", "D": "Massive"},
+"correct_answer": "B",
+"difficulty": 0.15,
+"topic": "Vocabulary",
+"tags": ["antonym"]
+},
+
+{
+"question_text": "What is 5 + 6?",
+"options": {"A": "10", "B": "12", "C": "11", "D": "13"},
+"correct_answer": "C",
+"difficulty": 0.1,
+"topic": "Algebra",
+"tags": ["addition"]
+},
+
+{
+"question_text": "What is 9 - 3?",
+"options": {"A": "6", "B": "5", "C": "7", "D": "4"},
+"correct_answer": "A",
+"difficulty": 0.15,
+"topic": "Algebra",
+"tags": ["subtraction"]
+},
+
+{
+"question_text": "Which word means 'fast'?",
+"options": {"A": "Quick", "B": "Lazy", "C": "Slow", "D": "Late"},
+"correct_answer": "A",
+"difficulty": 0.2,
+"topic": "Vocabulary",
+"tags": ["synonym"]
+},
+
+{
+"question_text": "Area of square with side 4",
+"options": {"A": "8", "B": "16", "C": "12", "D": "20"},
+"correct_answer": "B",
+"difficulty": 0.3,
+"topic": "Geometry",
+"tags": ["area"]
+},
+
+# ----------------
+# MEDIUM (0.35-0.6)
+# ----------------
+
+{
+"question_text": "Solve: 2x + 6 = 10",
+"options": {"A": "1", "B": "2", "C": "3", "D": "4"},
+"correct_answer": "B",
+"difficulty": 0.4,
+"topic": "Algebra",
+"tags": ["equation"]
+},
+
+{
+"question_text": "Perimeter of rectangle 7×3",
+"options": {"A": "20", "B": "18", "C": "16", "D": "22"},
+"correct_answer": "A",
+"difficulty": 0.4,
+"topic": "Geometry",
+"tags": ["perimeter"]
+},
+
+{
+"question_text": "Probability of rolling a 6",
+"options": {"A": "1/2", "B": "1/6", "C": "1/4", "D": "1/3"},
+"correct_answer": "B",
+"difficulty": 0.45,
+"topic": "Algebra",
+"tags": ["probability"]
+},
+
+{
+"question_text": "sin(90°)",
+"options": {"A": "0", "B": "1", "C": "-1", "D": "0.5"},
+"correct_answer": "B",
+"difficulty": 0.5,
+"topic": "Geometry",
+"tags": ["trigonometry"]
+},
+
+{
+"question_text": "Roots of x² − 4x + 4",
+"options": {"A": "2,2", "B": "1,4", "C": "2,4", "D": "3,3"},
+"correct_answer": "A",
+"difficulty": 0.6,
+"topic": "Algebra",
+"tags": ["quadratic"]
+},
+
+{
+"question_text": "Synonym for 'ubiquitous'",
+"options": {"A": "Rare", "B": "Hidden", "C": "Everywhere", "D": "Scarce"},
+"correct_answer": "C",
+"difficulty": 0.6,
+"topic": "Vocabulary",
+"tags": ["advanced"]
+},
+
+# ----------------
+# HARD (0.7-1.0)
+# ----------------
+
+{
+"question_text": "Antonym of 'mitigate'",
+"options": {"A": "Ease", "B": "Reduce", "C": "Worsen", "D": "Soften"},
+"correct_answer": "C",
+"difficulty": 0.7,
+"topic": "Vocabulary",
+"tags": ["advanced"]
+},
+
+{
+"question_text": "Synonym for 'obfuscate'",
+"options": {"A": "Explain", "B": "Reveal", "C": "Confuse", "D": "Clarify"},
+"correct_answer": "C",
+"difficulty": 0.8,
+"topic": "Vocabulary",
+"tags": ["advanced"]
+},
+
+{
+"question_text": "Derivative of x²",
+"options": {"A": "x", "B": "2x", "C": "x²", "D": "2"},
+"correct_answer": "B",
+"difficulty": 0.9,
+"topic": "Algebra",
+"tags": ["calculus"]
+},
+
+{
+"question_text": "Limit of (1 + 1/n)^n",
+"options": {"A": "1", "B": "e", "C": "2", "D": "0"},
+"correct_answer": "B",
+"difficulty": 0.95,
+"topic": "Algebra",
+"tags": ["calculus"]
+},
+
+{
+"question_text": "Antonym of 'ephemeral'",
+"options": {"A": "Temporary", "B": "Brief", "C": "Short", "D": "Permanent"},
+"correct_answer": "D",
+"difficulty": 0.9,
+"topic": "Vocabulary",
+"tags": ["advanced"]
+},
+
+{
+"question_text": "Integral of 2x dx",
+"options": {"A": "x² + C", "B": "2x²", "C": "x²", "D": "2x"},
+"correct_answer": "A",
+"difficulty": 0.85,
+"topic": "Algebra",
+"tags": ["calculus"]
+},
+
+{
+"question_text": "What is cos(0°)?",
+"options": {"A": "0", "B": "1", "C": "-1", "D": "0.5"},
+"correct_answer": "B",
+"difficulty": 0.7,
+"topic": "Geometry",
+"tags": ["trigonometry"]
+},
+
+{
+"question_text": "Solve: x² − 9 = 0",
+"options": {"A": "±3", "B": "±9", "C": "3", "D": "9"},
+"correct_answer": "A",
+"difficulty": 0.75,
+"topic": "Algebra",
+"tags": ["quadratic"]
+},
+
 ]
 
 
@@ -211,16 +239,9 @@ validate_questions(questions)
 
 result = questions_collection.insert_many(questions)
 
-print(f"Inserted {len(result.inserted_ids)} questions.")
-
-if len(result.inserted_ids) != EXPECTED_COUNT:
-    print("Warning: Expected 20 questions but inserted a different count.")
-else:
-    print("Question bank seeded successfully.")
-
-print("Creating indexes...")
+print(f"Inserted {len(result.inserted_ids)} questions")
 
 questions_collection.create_index("difficulty")
 questions_collection.create_index("topic")
 
-print("Indexes created.")
+print("Indexes created")
