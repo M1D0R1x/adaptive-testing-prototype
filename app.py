@@ -1,12 +1,14 @@
 import uuid
+from collections import Counter
+from typing import Dict, List
+
+from bson.objectid import ObjectId
 from fastapi import FastAPI, HTTPException, Path
 from pydantic import BaseModel
-from database import sessions_collection, questions_collection
+
 from adaptive import select_next_question, update_ability
+from database import sessions_collection, questions_collection
 from llm import generate_study_plan
-from bson.objectid import ObjectId
-from collections import Counter
-from typing import Dict, Any, List
 
 app = FastAPI(title="Adaptive Diagnostic Engine")
 
@@ -33,15 +35,20 @@ class AnswerResponse(BaseModel):
 
 class StudyPlanResponse(BaseModel):
     study_plan: str
+    final_ability: float
+    topic_errors: Dict[str, int]
+    ability_history: List[float]
 
 
 @app.post("/start_session", response_model=SessionResponse)
 def start_session():
+
     session_id = str(uuid.uuid4())
 
     session = {
         "session_id": session_id,
         "current_ability": 0.5,
+        "ability_history": [0.5],
         "answers": [],
         "questions_asked": [],
     }
@@ -62,23 +69,19 @@ def get_next_question(session_id: str = Path(...)):
     if len(session["questions_asked"]) >= 10:
         raise HTTPException(status_code=400, detail="Test completed")
 
-    try:
-        question = select_next_question(session_id)
+    question = select_next_question(session_id)
 
-        sessions_collection.update_one(
-            {"session_id": session_id},
-            {"$push": {"questions_asked": question["_id"]}},
-        )
+    sessions_collection.update_one(
+        {"session_id": session_id},
+        {"$push": {"questions_asked": question["_id"]}},
+    )
 
-        return {
-            "question_text": question["question_text"],
-            "options": question["options"],
-            "difficulty": question["difficulty"],
-            "topic": question["topic"],
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "question_text": question["question_text"],
+        "options": question["options"],
+        "difficulty": question["difficulty"],
+        "topic": question["topic"],
+    }
 
 
 @app.post("/submit_answer/{session_id}", response_model=AnswerResponse)
@@ -112,22 +115,17 @@ def submit_answer(session_id: str, body: SubmitAnswer):
         {"$push": {"answers": answer_record}},
     )
 
-    try:
+    new_ability = update_ability(session_id)
 
-        new_ability = update_ability(session_id)
+    sessions_collection.update_one(
+        {"session_id": session_id},
+        {
+            "$set": {"current_ability": new_ability},
+            "$push": {"ability_history": new_ability},
+        },
+    )
 
-        sessions_collection.update_one(
-            {"session_id": session_id},
-            {"$set": {"current_ability": new_ability}},
-        )
-
-        return {
-            "correct": correct,
-            "new_ability": new_ability,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"correct": correct, "new_ability": new_ability}
 
 
 @app.get("/study_plan/{session_id}", response_model=StudyPlanResponse)
@@ -141,7 +139,7 @@ def get_study_plan(session_id: str):
     if len(session["answers"]) < 10:
         raise HTTPException(status_code=400, detail="Test incomplete")
 
-    missed_topics: List[str] = []
+    missed_topics = []
 
     for answer in session["answers"]:
 
@@ -154,18 +152,15 @@ def get_study_plan(session_id: str):
             if question:
                 missed_topics.append(question["topic"])
 
-    topic_counts = Counter(missed_topics).most_common()
+    topic_counts = Counter(missed_topics)
 
     final_ability = session["current_ability"]
 
-    try:
+    plan = generate_study_plan(topic_counts.most_common(), final_ability)
 
-        plan = generate_study_plan(topic_counts, final_ability)
-
-        return {"study_plan": plan}
-
-    except Exception:
-
-        return {
-            "study_plan": "AI plan unavailable. Review missed topics and practice similar problems."
-        }
+    return {
+        "study_plan": plan,
+        "final_ability": final_ability,
+        "topic_errors": dict(topic_counts),
+        "ability_history": session.get("ability_history", []),
+    }

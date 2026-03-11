@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 
 API_URL = "http://127.0.0.1:8000"
+TOTAL_QUESTIONS = 10
 
 
 def api_post(url, data=None):
@@ -21,11 +22,6 @@ def api_get(url):
 
 st.title("Adaptive Diagnostic Engine")
 
-
-# -----------------------
-# Session Initialization
-# -----------------------
-
 if "session_id" not in st.session_state:
 
     session = api_post(f"{API_URL}/start_session")
@@ -37,14 +33,7 @@ if "session_id" not in st.session_state:
     st.session_state.study_plan = None
 
 
-TOTAL_QUESTIONS = 10
-
-# -----------------------
-# Progress Bar (FIXED)
-# -----------------------
-
 answered = st.session_state.q_index
-
 if st.session_state.feedback:
     answered += 1
 
@@ -53,29 +42,29 @@ progress_value = min(answered / TOTAL_QUESTIONS, 1.0)
 st.progress(progress_value)
 
 
-# -----------------------
-# Result Page
-# -----------------------
-
 if st.session_state.study_plan:
 
-    st.balloons()
-    st.header("Personalized Study Plan")
+    data = st.session_state.study_plan
 
-    st.write(st.session_state.study_plan)
+    st.header("Diagnostic Report")
+
+    st.metric("Final Ability Estimate", f"{data['final_ability']:.2f}")
+
+    st.subheader("Ability Progression")
+    st.line_chart(data["ability_history"])
+
+    st.subheader("Topic Errors")
+    st.write(data["topic_errors"])
+
+    st.subheader("Personalized Study Plan")
+    st.write(data["study_plan"])
 
     if st.button("Restart Test"):
         st.session_state.clear()
         st.rerun()
 
-
-# -----------------------
-# Test Flow
-# -----------------------
-
 else:
 
-    # Load question
     if st.session_state.question is None and st.session_state.q_index < TOTAL_QUESTIONS:
 
         q = api_get(f"{API_URL}/next_question/{st.session_state.session_id}")
@@ -83,17 +72,10 @@ else:
         if q:
             st.session_state.question = q
 
-        else:
-            plan = api_get(f"{API_URL}/study_plan/{st.session_state.session_id}")
-
-            if plan:
-                st.session_state.study_plan = plan["study_plan"]
-                st.rerun()
-
-    if st.session_state.question is None:
-        st.stop()
-
     q = st.session_state.question
+
+    if q is None:
+        st.stop()
 
     st.subheader(f"Question {st.session_state.q_index + 1}/{TOTAL_QUESTIONS}")
 
@@ -109,10 +91,6 @@ else:
         format_func=lambda x: f"{x}: {q['options'][x]}",
     )
 
-    # -----------------------
-    # Submit Answer
-    # -----------------------
-
     if st.button("Submit Answer") and st.session_state.feedback is None:
 
         result = api_post(
@@ -124,10 +102,6 @@ else:
             st.session_state.feedback = result
             st.rerun()
 
-    # -----------------------
-    # Feedback
-    # -----------------------
-
     if st.session_state.feedback:
 
         if st.session_state.feedback["correct"]:
@@ -137,7 +111,6 @@ else:
 
         st.info(f"Estimated Ability: {st.session_state.feedback['new_ability']:.2f}")
 
-        # Last question
         if st.session_state.q_index == TOTAL_QUESTIONS - 1:
 
             if st.button("Finish Test"):
@@ -147,7 +120,7 @@ else:
                 )
 
                 if plan:
-                    st.session_state.study_plan = plan["study_plan"]
+                    st.session_state.study_plan = plan
                     st.rerun()
 
         else:

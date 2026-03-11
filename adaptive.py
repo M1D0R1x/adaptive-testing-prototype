@@ -1,9 +1,10 @@
-import numpy as np
-from scipy.optimize import minimize_scalar
-from database import questions_collection, sessions_collection
-from bson.objectid import ObjectId
-from typing import Dict, Any
 import random
+from typing import Dict, Any
+
+import numpy as np
+from bson.objectid import ObjectId
+
+from database import questions_collection, sessions_collection
 
 
 def logistic(theta: float, b: float) -> float:
@@ -25,21 +26,25 @@ def select_next_question(session_id: str) -> Dict[str, Any]:
     ability = session.get("current_ability", 0.5)
 
     questions = list(
-        questions_collection.find({"_id": {"$nin": asked_ids}})
+        questions_collection.find({
+            "_id": {"$nin": asked_ids},
+            "difficulty": {
+                "$gte": ability - 0.25,
+                "$lte": ability + 0.25
+            }
+        })
     )
-
     if not questions:
         raise ValueError("No more questions available")
 
-    # compute information score
     scored = []
 
     for q in questions:
         b = q["difficulty"]
         info = information(ability, b)
 
-        # slight randomness to avoid identical sequence
-        info = info + random.uniform(0, 0.02)
+        # small randomness so sequences don't look identical
+        info += random.uniform(0, 0.02)
 
         scored.append((info, q))
 
