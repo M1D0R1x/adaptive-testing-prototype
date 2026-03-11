@@ -36,6 +36,7 @@ class AnswerResponse(BaseModel):
 class StudyPlanResponse(BaseModel):
     study_plan: str
     final_ability: float
+    performance_score: float
     topic_errors: Dict[str, int]
     ability_history: List[float]
 
@@ -49,6 +50,41 @@ def ability_band(theta: float) -> str:
     if theta < 0.85:
         return "advanced"
     return "expert"
+
+
+def compute_performance_score(session):
+
+    answers = session["answers"]
+
+    total = len(answers)
+    correct = sum(1 for a in answers if a["correct"])
+
+    accuracy = correct / total if total else 0
+
+    correct_difficulties = []
+
+    for ans in answers:
+        if ans["correct"]:
+            q = questions_collection.find_one(
+                {"_id": ObjectId(ans["question_id"])}
+            )
+            if q:
+                correct_difficulties.append(q["difficulty"])
+
+    avg_difficulty = (
+        sum(correct_difficulties) / len(correct_difficulties)
+        if correct_difficulties else 0
+    )
+
+    ability = session["current_ability"]
+
+    score = (
+        0.5 * ability +
+        0.3 * accuracy +
+        0.2 * avg_difficulty
+    )
+
+    return round(score, 3)
 
 
 @app.post("/start_session", response_model=SessionResponse)
@@ -144,13 +180,9 @@ def get_study_plan(session_id: str):
     missed_topics = []
 
     for answer in session["answers"]:
-
         if not answer["correct"]:
-
             q_id = ObjectId(answer["question_id"])
-
             question = questions_collection.find_one({"_id": q_id})
-
             if question:
                 missed_topics.append(question["topic"])
 
@@ -159,6 +191,8 @@ def get_study_plan(session_id: str):
     final_ability = session["current_ability"]
 
     band = ability_band(final_ability)
+
+    performance_score = compute_performance_score(session)
 
     plan = generate_study_plan(
         topic_counts.most_common(),
@@ -169,6 +203,7 @@ def get_study_plan(session_id: str):
     return {
         "study_plan": plan,
         "final_ability": final_ability,
+        "performance_score": performance_score,
         "topic_errors": dict(topic_counts),
         "ability_history": session.get("ability_history", []),
     }

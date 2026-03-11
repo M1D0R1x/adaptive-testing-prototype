@@ -7,6 +7,9 @@ from bson.objectid import ObjectId
 from database import questions_collection, sessions_collection
 
 
+WINDOW = 0.15  # difficulty window around ability
+
+
 def logistic(theta: float, b: float) -> float:
     return 1 / (1 + np.exp(-(theta - b)))
 
@@ -29,8 +32,8 @@ def select_next_question(session_id: str) -> Dict[str, Any]:
         questions_collection.find({
             "_id": {"$nin": asked_ids},
             "difficulty": {
-                "$gte": ability - 0.25,
-                "$lte": ability + 0.25
+                "$gte": ability - WINDOW,
+                "$lte": ability + WINDOW
             }
         })
     )
@@ -50,6 +53,7 @@ def select_next_question(session_id: str) -> Dict[str, Any]:
         b = q["difficulty"]
         info = information(ability, b)
 
+        # slight randomness so sequences aren't identical
         info += random.uniform(0, 0.02)
 
         scored.append((info, q))

@@ -49,18 +49,29 @@ if st.session_state.study_plan:
     st.header("Diagnostic Report")
 
     st.metric("Final Ability Estimate", f"{data['final_ability']:.2f}")
+    st.metric("Performance Score", f"{data['performance_score']:.2f}")
 
     st.subheader("Ability Progression")
-    st.line_chart(data["ability_history"])
+
+    ability_history = data["ability_history"]
+
+    ability_df = pd.DataFrame({
+        "Question": list(range(1, len(ability_history) + 1)),
+        "Ability": ability_history
+    }).set_index("Question")
+
+    st.line_chart(ability_df)
 
     if st.session_state.difficulties:
 
         chart = pd.DataFrame({
-            "ability": data["ability_history"][1:],
-            "difficulty": st.session_state.difficulties
-        })
+            "Question": list(range(1, len(st.session_state.difficulties) + 1)),
+            "Ability": ability_history[1:],
+            "Difficulty": st.session_state.difficulties
+        }).set_index("Question")
 
         st.subheader("Question Difficulty vs Ability")
+
         st.line_chart(chart)
 
     st.subheader("Topic Errors")
