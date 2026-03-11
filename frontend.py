@@ -43,7 +43,13 @@ TOTAL_QUESTIONS = 10
 # Progress Bar (FIXED)
 # -----------------------
 
-progress_value = min(st.session_state.q_index / TOTAL_QUESTIONS, 1.0)
+answered = st.session_state.q_index
+
+if st.session_state.feedback:
+    answered += 1
+
+progress_value = min(answered / TOTAL_QUESTIONS, 1.0)
+
 st.progress(progress_value)
 
 

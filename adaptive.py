@@ -59,47 +59,27 @@ def update_ability(session_id: str) -> float:
     if not answers:
         return 0.5
 
-    question_ids = [ObjectId(a["question_id"]) for a in answers]
+    last = answers[-1]
 
-    questions = {
-        str(q["_id"]): q
-        for q in questions_collection.find({"_id": {"$in": question_ids}})
-    }
-
-    def neg_log_likelihood(theta: float):
-
-        ll = 0
-
-        for ans in answers:
-
-            q = questions.get(ans["question_id"])
-            if not q:
-                continue
-
-            b = q["difficulty"]
-            p = logistic(theta, b)
-
-            if ans["correct"]:
-                ll += np.log(p + 1e-9)
-            else:
-                ll += np.log(1 - p + 1e-9)
-
-        return -ll
-
-    result = minimize_scalar(
-        neg_log_likelihood,
-        bounds=(0.0, 1.0),
-        method="bounded",
+    question = questions_collection.find_one(
+        {"_id": ObjectId(last["question_id"])}
     )
 
-    if not result.success:
-        raise ValueError("Ability optimization failed")
+    if not question:
+        raise ValueError("Question not found")
 
-    new_theta = float(result.x)
+    theta = session.get("current_ability", 0.5)
 
-    # smoothing to prevent extreme jumps
-    previous = session.get("current_ability", 0.5)
+    b = question["difficulty"]
 
-    smoothed = 0.7 * previous + 0.3 * new_theta
+    p = logistic(theta, b)
 
-    return smoothed
+    r = 1 if last["correct"] else 0
+
+    learning_rate = 0.25
+
+    new_theta = theta + learning_rate * (r - p)
+
+    new_theta = max(0.0, min(1.0, new_theta))
+
+    return float(new_theta)
