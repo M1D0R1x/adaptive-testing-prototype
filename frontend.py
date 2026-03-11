@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import pandas as pd
 
 API_URL = "http://127.0.0.1:8000"
 TOTAL_QUESTIONS = 10
@@ -31,15 +32,14 @@ if "session_id" not in st.session_state:
     st.session_state.question = None
     st.session_state.feedback = None
     st.session_state.study_plan = None
+    st.session_state.difficulties = []
 
 
 answered = st.session_state.q_index
 if st.session_state.feedback:
     answered += 1
 
-progress_value = min(answered / TOTAL_QUESTIONS, 1.0)
-
-st.progress(progress_value)
+st.progress(min(answered / TOTAL_QUESTIONS, 1.0))
 
 
 if st.session_state.study_plan:
@@ -52,6 +52,16 @@ if st.session_state.study_plan:
 
     st.subheader("Ability Progression")
     st.line_chart(data["ability_history"])
+
+    if st.session_state.difficulties:
+
+        chart = pd.DataFrame({
+            "ability": data["ability_history"][1:],
+            "difficulty": st.session_state.difficulties
+        })
+
+        st.subheader("Question Difficulty vs Ability")
+        st.line_chart(chart)
 
     st.subheader("Topic Errors")
     st.write(data["topic_errors"])
@@ -71,6 +81,7 @@ else:
 
         if q:
             st.session_state.question = q
+            st.session_state.difficulties.append(q["difficulty"])
 
     q = st.session_state.question
 

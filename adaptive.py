@@ -34,6 +34,13 @@ def select_next_question(session_id: str) -> Dict[str, Any]:
             }
         })
     )
+
+    # fallback if window empty
+    if not questions:
+        questions = list(
+            questions_collection.find({"_id": {"$nin": asked_ids}})
+        )
+
     if not questions:
         raise ValueError("No more questions available")
 
@@ -43,7 +50,6 @@ def select_next_question(session_id: str) -> Dict[str, Any]:
         b = q["difficulty"]
         info = information(ability, b)
 
-        # small randomness so sequences don't look identical
         info += random.uniform(0, 0.02)
 
         scored.append((info, q))

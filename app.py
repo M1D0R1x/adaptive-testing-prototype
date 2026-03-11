@@ -40,6 +40,17 @@ class StudyPlanResponse(BaseModel):
     ability_history: List[float]
 
 
+def ability_band(theta: float) -> str:
+
+    if theta < 0.35:
+        return "beginner"
+    if theta < 0.65:
+        return "intermediate"
+    if theta < 0.85:
+        return "advanced"
+    return "expert"
+
+
 @app.post("/start_session", response_model=SessionResponse)
 def start_session():
 
@@ -92,15 +103,9 @@ def submit_answer(session_id: str, body: SubmitAnswer):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    if not session["questions_asked"]:
-        raise HTTPException(status_code=400, detail="No question asked yet")
-
     question_id = session["questions_asked"][-1]
 
     question = questions_collection.find_one({"_id": question_id})
-
-    if not question:
-        raise HTTPException(status_code=500, detail="Question missing")
 
     correct = body.answer.upper() == question["correct_answer"].upper()
 
@@ -133,9 +138,6 @@ def get_study_plan(session_id: str):
 
     session = sessions_collection.find_one({"session_id": session_id})
 
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-
     if len(session["answers"]) < 10:
         raise HTTPException(status_code=400, detail="Test incomplete")
 
@@ -156,7 +158,13 @@ def get_study_plan(session_id: str):
 
     final_ability = session["current_ability"]
 
-    plan = generate_study_plan(topic_counts.most_common(), final_ability)
+    band = ability_band(final_ability)
+
+    plan = generate_study_plan(
+        topic_counts.most_common(),
+        final_ability,
+        band
+    )
 
     return {
         "study_plan": plan,
